@@ -43,6 +43,9 @@ class image_db():
 		self.imgindex[1] = self.imgindex[0][index_split:]
 		self.imgindex[0] = self.imgindex[0][:index_split]
 
+	def transform_label(self, labels_map):
+		self.tlabel_map = labels_map
+
 	def get_index(self, idx, size=None, cmap='rgb'):
 		### get images ###
 		img = self.images[idx]
@@ -53,7 +56,7 @@ class image_db():
 		### resize if necessary
 		if size is not None: img = self._img_resize(img, size)
 
-		return img, os.path.splitext(os.path.basename(self.fnames[idx]))[0]
+		return img, self.tlabel_map(os.path.splitext(os.path.basename(self.fnames[idx]))[0])
 
 	def get_batch(self, num, mode='all', size=None, cmap='rgb'):
 		if mode not in self.modeval:
@@ -92,7 +95,25 @@ class image_db():
 			resized_img[..., k] = skimage.transform.resize(img[..., k], size, mode='reflect')
 		return resized_img
 
-def read_label(csv_fname):
+class Label():
+	def __init__(self, id2num, num2name, name2num):
+		self.id2num = id2num
+		self.num2name = num2name
+		self.name2num = name2num
+
+	def i2s(self, i):
+		return self.num2name[self.id2num[i]]
+
+	def i2n(self, i):
+		return self.id2num[i]
+
+	def n2s(self, i):
+		return self.num2name[i]
+
+	def s2n(self, i):
+		return self.name2num[i]
+
+def cifar10_read_label(csv_fname):
 	df = pd.read_csv(csv_fname)
 
 	### explore labels ###
@@ -106,12 +127,13 @@ def read_label(csv_fname):
 	df = df.replace({'label':name2num})
 	id2num = pd.Series(df.label.values,index=df.id.astype(str)).to_dict()
 
-	return id2num, num2name, name2num
+	return Label(id2num, num2name, name2num)
 
 if __name__ == '__main__':
-	labels = read_label("../trainLabels.csv")
+	labels = cifar10_read_label("../trainLabels.csv")
 
 	idb = image_db("../train")
+	idb.transform_label(lambda x: labels.i2s(x))
 	size = [100, 100]
 	mode = 'test'
 	cmap = 'grey'
