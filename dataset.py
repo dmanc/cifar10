@@ -43,6 +43,9 @@ class image_db():
 		self.imgindex[1] = self.imgindex[0][index_split:]
 		self.imgindex[0] = self.imgindex[0][:index_split]
 
+		### label map ###
+		self.tlabel_map = lambda x: x
+
 	def transform_label(self, labels_map):
 		self.tlabel_map = labels_map
 
@@ -78,8 +81,8 @@ class image_db():
 		batch_labels = np.array(batch_labels)
 		return batch_imgs, batch_labels
 
-	def get_size(self):
-		return self.size
+	def get_size(self, mode='all'):
+		return len(self.imgindex[self.modeval.index(mode)])
 
 	def _rgb2cmap(self, img, cmap):
 		if cmap == 'grey':
