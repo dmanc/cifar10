@@ -303,7 +303,7 @@ class Vae():
 		# batch_img, batch_label = dataset.get_batch(1, mode='test', size=self.in_size)
 		# recon_img = sess.run([self.vae_outputs], feed_dict={self.vae_inputs:batch_img})[0]
 		# for img_sum in self.kwret_enc['image']+self.kwret_dec['image']:
-		# 	writer.add_summary(img_sum.eval(feed_dict={self.vae_inputs:batch_img}))
+		#	writer.add_summary(img_sum.eval(feed_dict={self.vae_inputs:batch_img}))
 		# self.report("layers drawn")
 
 		writer.flush()
@@ -324,6 +324,23 @@ class Vae():
 		if self.pca is not None:
 			z_mu = self.pca.inverse_transform(z_mu)
 		return sess.run(self.vae_outputs, feed_dict={self.z: z_mu})
+
+	def get_focus(self, sess, X):
+		regen = self.generate(sess, self.transform(sess, X))
+		return obj_atten(regen)
+
+def obj_atten(imgs):
+	atten_imgs = []
+	for i, img in enumerate(imgs):
+		mx, my = img.shape[0]/2.0, img.shape[1]/2.0
+		lkhood = 0.0;
+		for i in range(img.shape[0]):
+			for j in range(img.shape[1]):
+				d = np.sqrt((mx-i)**2 + (my-j)**2)
+				lkhood = img[i][j] * d - (1.0 - img[i][j]) * d
+		atten_imgs.append(1.0 / (1 + np.exp(3*(0.5-img if lkhood <= 0.0 else
+        img-0.5))))
+	return np.array(atten_imgs)
 
 def test_reconstruct(sess, mdb, vae, batch_rsq=5):
 	### reconstruction by exact mean ###
@@ -359,9 +376,11 @@ if __name__ == '__main__':
 	dataset.transform_label(lambda x: labels.i2n(x))
 
 	vae = Vae(name="2d_vae_0", in_size=[32, 32], \
-		cnvlf=[8, 16], kernel_size=[[5,5], [5,5]], strides=[2, 2], \
-		d_cnvlf=[8, 1], d_kernel_size=[[5,5], [5,5]], d_strides=[2, 2], \
-		nlatent=8, lr=0.001)
+		cnvlf=[32, 32, 16], kernel_size=[[5,5], [5,5], [3, 3]], strides=[2, 2,
+        2], \
+		d_cnvlf=[32, 32, 1], d_kernel_size=[[5,5], [5,5], [3, 3]],
+        d_strides=[2, 2, 2], \
+		nlatent=16, lr=0.001)
 
 	sess = tf.InteractiveSession()
 	# with tf.Session() as sess:
