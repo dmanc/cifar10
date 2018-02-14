@@ -231,8 +231,12 @@ if __name__ == '__main__':
     labels = dataset.cifar10_read_label("../trainLabels.csv")
     idb = dataset.image_db("../train")
     idb.transform_label(lambda x: labels.i2n(x))
-    x_train, y_train = idb.get_batch(idb.get_size('all'), mode='all', cmap='rgb')
+    x_train, y_train = idb.get_batch(idb.get_size('list'), mode='list', cmap='rgb')
     x_test, y_test = idb.get_batch(idb.get_size('test'), mode='test', cmap='rgb')
+
+    ### TODO: get small batches + classify + put in csv
+    idb_test = dataset.image_db("../test")
+    x_test, y_test = idb_test.get_batch(idb_test.get_size('list'), mode='list', cmap='rgb')
 
     ### pull all dataset
     # (x_train, y_train), (x_test, y_test) = cifar10.load_data()
@@ -242,8 +246,8 @@ if __name__ == '__main__':
     y_train = keras.utils.to_categorical(y_train, 10)
     y_test = keras.utils.to_categorical(y_test, 10)
 
-    print(x_train[:3], x_train.shape)
-    print(y_train[:3], y_train.shape)
+    print(x_train.shape, y_train.shape)
+    print(x_test.shape, y_test.shape)
 
     ### vae attention ###
     import tensorflow as tf
