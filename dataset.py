@@ -90,6 +90,10 @@ class image_db():
 			img = img.reshape((img.shape[0], img.shape[1], 1))
 		elif cmap == 'hsv':
 			img = skimage.color.rgb2hsv(img)
+		elif cmap == 'rgb':
+			img = img/255.0
+		# if np.max(img) > 1.0:
+		# 	img /= np.max(img)
 		return img
 
 	def _img_resize(self, img, size):

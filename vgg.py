@@ -11,6 +11,8 @@ from keras.layers.core import Lambda
 from keras import backend as K
 from keras import regularizers
 
+import dataset
+
 import os
 
 class cifar10vgg:
@@ -225,13 +227,23 @@ def rgbfocus(vae, sess, imgs):
     return fimgs
 
 if __name__ == '__main__':
+    ### from kaggle
+    labels = dataset.cifar10_read_label("../trainLabels.csv")
+    idb = dataset.image_db("../train")
+    idb.transform_label(lambda x: labels.i2n(x))
+    x_train, y_train = idb.get_batch(idb.get_size('all'), mode='all', cmap='rgb')
+    x_test, y_test = idb.get_batch(idb.get_size('test'), mode='test', cmap='rgb')
+
     ### pull all dataset
-    (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-    x_train = x_train.astype('float32')
-    x_test = x_test.astype('float32')
+    # (x_train, y_train), (x_test, y_test) = cifar10.load_data()
+    # x_train = x_train.astype('float32')
+    # x_test = x_test.astype('float32')
 
     y_train = keras.utils.to_categorical(y_train, 10)
     y_test = keras.utils.to_categorical(y_test, 10)
+
+    print(x_train[:3], x_train.shape)
+    print(y_train[:3], y_train.shape)
 
     ### vae attention ###
     import tensorflow as tf
@@ -246,8 +258,8 @@ if __name__ == '__main__':
     vae.restore(sess)
 
     ### dataset with focus ###
-    x_train_f = rgbfocus(vae, sess, x_train)
-    x_test_f = rgbfocus(vae, sess, x_test)
+    # x_train_f = rgbfocus(vae, sess, x_train)
+    # x_test_f = rgbfocus(vae, sess, x_test)
 
     """
     import matplotlib.pyplot as plt
@@ -261,9 +273,11 @@ if __name__ == '__main__':
 
     # name = None
     # name = 'cifar10vgg16.h5'
-    name = 'cifar10vgg16_focus.h5'
-    model = cifar10vgg(name)
-    model.train(model.model, x_train_f, x_test_f, y_train, y_test)
+    # name = 'cifar10vgg16_focus.h5'
+    name = 'cifar10vgg16_focus.h5py'
+    # model = cifar10vgg()
+    model = cifar10vgg(train_path=name)
+    model.train(model.model, x_train, x_test, y_train, y_test)
 
     predicted_x = model.predict(x_test)
     residuals = np.argmax(predicted_x,1)!=np.argmax(y_test,1)

@@ -329,18 +329,80 @@ class Vae():
 		regen = self.generate(sess, self.transform(sess, X))
 		return obj_atten(regen)
 
+A, B = 6.5, 15.0
+def focus_actfn(x):
+	return 1.0/(1 + B*np.exp(-A * x))
+
 def obj_atten(imgs):
-	atten_imgs = []
-	for i, img in enumerate(imgs):
+	atten_imgs = np.zeros(imgs.shape)
+	for k, img in enumerate(imgs):
 		mx, my = img.shape[0]/2.0, img.shape[1]/2.0
 		lkhood = 0.0;
 		for i in range(img.shape[0]):
 			for j in range(img.shape[1]):
 				d = np.sqrt((mx-i)**2 + (my-j)**2)
 				lkhood = img[i][j] * d - (1.0 - img[i][j]) * d
-		atten_imgs.append(1.0 / (1 + np.exp(3*(0.5-img if lkhood <= 0.0 else
-        img-0.5))))
-	return np.array(atten_imgs)
+		# atten_imgs.append(1.0 / (1 + np.exp(3*(0.5-img if lkhood <= 0.0 else
+  #       img-0.5))))
+  		print k, "-> likelihood:", lkhood
+		atten_imgs[k, ...] = focus_actfn(1.0-img if lkhood >= 0.0 else img)
+		# atten_imgs[k, ...] = focus_actfn(img)
+	return atten_imgs
+
+def np_rgb2grey(rgb):
+	return np.dot(rgb[...,:3], [0.299, 0.587, 0.114])[..., np.newaxis]
+
+FOCUS_BSIZE = 1000
+def rgbfocus(vae, sess, imgs):
+    nimg = imgs.shape[0]
+    fimgs = np.zeros((FOCUS_BSIZE, imgs.shape[1], imgs.shape[2], 3))
+    focus_out = np.zeros((FOCUS_BSIZE, imgs.shape[1], imgs.shape[2], 1))
+    for i in range(0, nimg, FOCUS_BSIZE):
+    	print i
+    	gimgs = np_rgb2grey(imgs[i:min(nimg, i+FOCUS_BSIZE)])
+        focus = vae.get_focus(sess, gimgs)
+        fimgs = np.zeros((FOCUS_BSIZE, imgs.shape[1], imgs.shape[2], 3))
+        print focus.shape, fimgs.shape, imgs.shape
+        for k in range(3):
+        	fimgs[i:min(nimg, i+FOCUS_BSIZE), :, :, k] = \
+        		imgs[i:min(nimg, i+FOCUS_BSIZE), :, :, k] * focus[:, :, :, 0]
+        focus_out[i:min(nimg, i+FOCUS_BSIZE), ...] = focus
+
+    print np.max(imgs), np.max(fimgs)
+    return fimgs, focus_out
+
+def test_focus(sess, mdb, vae, batch_rsq=5):
+	### reconstruction by exact mean ###
+	batch_img, batch_label = mdb.get_batch(batch_rsq**2, mode='test', size=vae.in_size, cmap='rgb')
+	focus_img, focus_f = rgbfocus(vae, sess, batch_img)
+
+	### plot results ###
+	plt.figure()
+	plt.suptitle('Dataset')
+	for i in range(batch_img.shape[0]):
+		plt.subplot(batch_rsq, batch_rsq, i+1)
+		plt.imshow(batch_img[i, ...])
+		plt.axis('off')
+	mng = plt.get_current_fig_manager()
+	mng.full_screen_toggle()
+
+	plt.figure()
+	plt.suptitle('Focus Filter')
+	for i in range(batch_img.shape[0]):
+		plt.subplot(batch_rsq, batch_rsq, i+1)
+		plt.imshow(focus_f[i, ..., 0], cmap='gray')
+		plt.axis('off')
+	mng = plt.get_current_fig_manager()
+	mng.full_screen_toggle()
+
+	plt.figure()
+	plt.suptitle('Focused Dataset')
+	for i in range(batch_img.shape[0]):
+		plt.subplot(batch_rsq, batch_rsq, i+1)
+		plt.imshow(focus_img[i, ...])
+		plt.axis('off')
+	mng = plt.get_current_fig_manager()
+	mng.full_screen_toggle()
 
 def test_reconstruct(sess, mdb, vae, batch_rsq=5):
 	### reconstruction by exact mean ###
@@ -398,7 +460,8 @@ if __name__ == '__main__':
 	vae.write_summary(sess, filename="viz/vae/"+vae.name_scope)
 
 	### testing ###
-	test_reconstruct(sess, dataset, vae, batch_rsq=10)
+	# test_reconstruct(sess, dataset, vae, batch_rsq=10)
+	test_focus(sess, dataset, vae, batch_rsq=3)
 	plt.show()
 	plt.close()
 	
