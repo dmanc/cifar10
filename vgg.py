@@ -235,8 +235,11 @@ if __name__ == '__main__':
     x_test, y_test = idb.get_batch(idb.get_size('test'), mode='test', cmap='rgb')
 
     ### TODO: get small batches + classify + put in csv
-    idb_test = dataset.image_db("../test")
-    x_test, y_test = idb_test.get_batch(idb_test.get_size('list'), mode='list', cmap='rgb')
+    #idb_test = dataset.image_db("../test")
+    idb_test = dataset.image_db("../train")
+
+    #x_test, y_test = idb_test.get_batch(idb_test.get_size('test'), mode='test', cmap='rgb')
+    x_test, y_test = idb.get_batch(idb.get_size('test'), mode='test', cmap='rgb')
 
     ### pull all dataset
     # (x_train, y_train), (x_test, y_test) = cifar10.load_data()
