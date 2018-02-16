@@ -147,7 +147,7 @@ class cifar10vgg:
 
         #training parameters
         batch_size = 128
-        maxepoches = 100
+        maxepoches = 250
         learning_rate = 0.1
         lr_decay = 1e-6
 
@@ -228,30 +228,25 @@ def rgbfocus(vae, sess, imgs):
 
 if __name__ == '__main__':
     ### from kaggle
-    labels = dataset.cifar10_read_label("../trainLabels.csv")
-    idb = dataset.image_db("../train")
+    #labels = dataset.cifar10_read_label("../trainLabels.csv")
+    #idb = dataset.image_db("../train")
+    #idb.transform_label(lambda x: labels.i2n(x))
+    #x_train, y_train = idb.get_batch(idb.get_size('list'), mode='list', cmap='rgb')
+    #x_test, y_test = idb.get_batch(idb.get_size('test'), mode='test', cmap='rgb')
+    labels = dataset.cifar10_read_label('../trainLabels.csv')
+    idb = dataset.image_db('../train', train_portion=0.9)
     idb.transform_label(lambda x: labels.i2n(x))
-    x_train, y_train = idb.get_batch(idb.get_size('list'), mode='list', cmap='rgb')
+    x_train, y_train = idb.get_batch(idb.get_size('train'), mode='train', cmap='rgb')
     x_test, y_test = idb.get_batch(idb.get_size('test'), mode='test', cmap='rgb')
 
+    
     ### TODO: get small batches + classify + put in csv
     #idb_test = dataset.image_db("../test")
     idb_test = dataset.image_db("../train")
 
     #x_test, y_test = idb_test.get_batch(idb_test.get_size('test'), mode='test', cmap='rgb')
     x_test, y_test = idb.get_batch(idb.get_size('test'), mode='test', cmap='rgb')
-
-    ### pull all dataset
-    # (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-    # x_train = x_train.astype('float32')
-    # x_test = x_test.astype('float32')
-
-    y_train = keras.utils.to_categorical(y_train, 10)
-    y_test = keras.utils.to_categorical(y_test, 10)
-
-    print(x_train.shape, y_train.shape)
-    print(x_test.shape, y_test.shape)
-
+    
     ### vae attention ###
     import tensorflow as tf
     from vae_build import Vae
@@ -264,9 +259,25 @@ if __name__ == '__main__':
     sess.run(vae.init)
     vae.restore(sess)
 
-    ### dataset with focus ###
+
+    x_train = rgbfocus(vae, sess, x_train)[0]
+    x_test = rgbfocus(vae, sess, x_test)[0]
+    
+    ### pull all dataset
+    # (x_train, y_train), (x_test, y_test) = cifar10.load_data()
+    # x_train = x_train.astype('float32')
+    # x_test = x_test.astype('float32')
+
+    y_train = keras.utils.to_categorical(y_train, 10)
+    y_test = keras.utils.to_categorical(y_test, 10)
+
+    print(x_train.shape, y_train.shape)
+    print(x_test.shape, y_test.shape)
+
+        ### dataset with focus ###
     # x_train_f = rgbfocus(vae, sess, x_train)
     # x_test_f = rgbfocus(vae, sess, x_test)
+
 
     """
     import matplotlib.pyplot as plt
@@ -281,7 +292,7 @@ if __name__ == '__main__':
     # name = None
     # name = 'cifar10vgg16.h5'
     # name = 'cifar10vgg16_focus.h5'
-    name = 'cifar10vgg16_focus.h5py'
+    name = 'cifar10vgg16_focus1.h5py'
     # model = cifar10vgg()
     model = cifar10vgg(train_path=name)
     model.train(model.model, x_train, x_test, y_train, y_test)
