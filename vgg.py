@@ -242,10 +242,8 @@ if __name__ == '__main__':
     
     ### TODO: get small batches + classify + put in csv
     #idb_test = dataset.image_db("../test")
-    idb_test = dataset.image_db("../train")
 
     #x_test, y_test = idb_test.get_batch(idb_test.get_size('test'), mode='test', cmap='rgb')
-    x_test, y_test = idb.get_batch(idb.get_size('test'), mode='test', cmap='rgb')
     
     ### vae attention ###
     import tensorflow as tf
@@ -260,8 +258,8 @@ if __name__ == '__main__':
     vae.restore(sess)
 
 
-    x_train = rgbfocus(vae, sess, x_train)[0]
-    x_test = rgbfocus(vae, sess, x_test)[0]
+    x_train = rgbfocus(vae, sess, x_train)
+    x_test = rgbfocus(vae, sess, x_test)
     
     ### pull all dataset
     # (x_train, y_train), (x_test, y_test) = cifar10.load_data()
